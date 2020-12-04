@@ -852,6 +852,11 @@ static int get_curl_http_version_opt(const char *version_string, long *opt)
 
 #endif
 
+static int is_pkcs11_uri(const char *string)
+{
+	return (string && strcasecmp(string, "pkcs11:"));
+}
+
 static CURL *get_curl_handle(void)
 {
 	CURL *result = curl_easy_init();
@@ -936,13 +941,19 @@ static CURL *get_curl_handle(void)
 		curl_easy_setopt(result, CURLOPT_SSL_CIPHER_LIST,
 				ssl_cipherlist);
 
-	if (ssl_cert != NULL)
+	if (ssl_cert != NULL) {
 		curl_easy_setopt(result, CURLOPT_SSLCERT, ssl_cert);
+		if (is_pkcs11_uri(ssl_cert))
+			curl_easy_setopt(result, CURLOPT_SSLCERTTYPE, "ENG");
+    }
 	if (has_cert_password())
 		curl_easy_setopt(result, CURLOPT_KEYPASSWD, cert_auth.password);
 #if LIBCURL_VERSION_NUM >= 0x070903
-	if (ssl_key != NULL)
+	if (ssl_key != NULL) {
 		curl_easy_setopt(result, CURLOPT_SSLKEY, ssl_key);
+		if (is_pkcs11_uri(ssl_key))
+			curl_easy_setopt(result, CURLOPT_SSLCERTTYPE, "ENG");
+    }
 #endif
 #if LIBCURL_VERSION_NUM >= 0x070908
 	if (ssl_capath != NULL)
